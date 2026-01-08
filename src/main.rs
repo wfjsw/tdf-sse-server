@@ -5,7 +5,7 @@ mod cors;
 mod messenger;
 
 use rocket::response::stream::{Event, EventStream};
-use rocket::tokio::{select, time::{Instant, Duration, self}, self};
+use rocket::tokio::select;
 use rocket::{Shutdown, State};
 
 use branca::decode as branca_decode;
@@ -13,7 +13,6 @@ use serde::Deserialize;
 
 use std::borrow::Cow;
 use std::vec::Vec;
-use std::time::{UNIX_EPOCH, SystemTime};
 
 struct AppConfig {
     key: Vec<u8>,
@@ -50,9 +49,7 @@ async fn events(
     let mut receiver = messager.subscribe(request.topics);
 
     EventStream! {
-        let sleep = time::sleep(Duration::from_secs(5));
-        tokio::pin!(sleep);
-        yield Event::comment("c");
+        yield Event::comment("");
         loop {
             select! {
                 msg = receiver.subscription.recv() => match msg {
@@ -62,10 +59,6 @@ async fn events(
                     None => break
                 },
                 _ = &mut end => break,
-                () = &mut sleep => {
-                    sleep.as_mut().reset(Instant::now() + Duration::from_secs(30));
-                    yield Event::comment("k");
-                },
             };
         }
     }
